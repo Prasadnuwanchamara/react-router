@@ -1,332 +1,121 @@
----
-title: Routing
-order: 2
----
+import { useState } from "react"; import { Card, CardContent } from "@/components/ui/card"; import { Button } from "@/components/ui/button"; import { Input } from "@/components/ui/input"; import { Textarea } from "@/components/ui/textarea"; import { Label } from "@/components/ui/label"; import { Upload, History, Search } from "lucide-react";
+
+export default function MaintenanceForm() { const [form, setForm] = useState({ date: new Date().toISOString().split("T")[0], equipment: "", shift: "", lubrication: false, inspection: false, temperature: false, remarks: "", technician: "", photo: null, });
+
+const [logs, setLogs] = useState([]); const [viewLogs, setViewLogs] = useState(false); const [search, setSearch] = useState(""); const [filterShift, setFilterShift] = useState(""); const [filterEquipment, setFilterEquipment] = useState("");
+
+const handleChange = (e) => { const { name, type, checked, value, files } = e.target; setForm({ ...form, [name]: type === "checkbox" ? checked : type === "file" ? files[0] : value, }); };
+
+const handleSubmit = () => { const newLog = { ...form, photo: form.photo ? form.photo.name : "No photo uploaded", }; setLogs([...logs, newLog]); alert("Maintenance log submitted successfully!"); };
+
+const handleExport = () => { alert("Export to Excel feature is coming soon."); };
+
+const filteredLogs = logs.filter((log) => { const searchMatch = log.technician.toLowerCase().includes(search.toLowerCase()) || log.equipment.toLowerCase().includes(search.toLowerCase()) || log.remarks.toLowerCase().includes(search.toLowerCase()); const shiftMatch = filterShift ? log.shift === filterShift : true; const equipmentMatch = filterEquipment ? log.equipment === filterEquipment : true; return searchMatch && shiftMatch && equipmentMatch; });
+
+return ( <div className="max-w-xl mx-auto p-4 space-y-4"> <Card> <CardContent className="space-y-4 p-4"> <h2 className="text-xl font-semibold">Daily Maintenance Log</h2>
+
+<div>
+        <Label>Date</Label>
+        <Input type="date" name="date" value={form.date} onChange={handleChange} />
+      </div>
+
+      <div>
+        <Label>Equipment</Label>
+        <Input name="equipment" placeholder="e.g., Cane Crusher 1" onChange={handleChange} />
+      </div>
+
+      <div>
+        <Label>Shift</Label>
+        <Input name="shift" placeholder="A / B / C" onChange={handleChange} />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Checklist</Label>
+        <div className="space-x-2">
+          <label>
+            <input type="checkbox" name="lubrication" onChange={handleChange} /> Lubrication
+          </label>
+          <label>
+            <input type="checkbox" name="inspection" onChange={handleChange} /> Visual Inspection
+          </label>
+          <label>
+            <input type="checkbox" name="temperature" onChange={handleChange} /> Temperature Check
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <Label>Remarks</Label>
+        <Textarea name="remarks" onChange={handleChange} placeholder="Any issues or observations..." />
+      </div>
+
+      <div>
+        <Label>Technician Name</Label>
+        <Input name="technician" onChange={handleChange} placeholder="e.g., John D." />
+      </div>
+
+      <div>
+        <Label>Upload Photo</Label>
+        <Input type="file" name="photo" onChange={handleChange} accept="image/*" />
+      </div>
+
+      <Button className="w-full" onClick={handleSubmit}>Submit</Button>
+      <Button variant="outline" className="w-full mt-2" onClick={handleExport}>
+        <Upload className="mr-2 h-4 w-4" /> Export Logs (Excel)
+      </Button>
+      <Button variant="secondary" className="w-full mt-2" onClick={() => setViewLogs(!viewLogs)}>
+        <History className="mr-2 h-4 w-4" /> {viewLogs ? "Hide Logs" : "View Logs"}
+      </Button>
+    </CardContent>
+  </Card>
+
+  {viewLogs && (
+    <Card>
+      <CardContent className="p-4 space-y-4">
+        <h3 className="text-lg font-semibold">Maintenance History</h3>
+
+        <div className="flex gap-2">
+          <Input
+            placeholder="Search by technician, equipment, remarks"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <Input
+            placeholder="Filter by Equipment"
+            value={filterEquipment}
+            onChange={(e) => setFilterEquipment(e.target.value)}
+          />
+          <Input
+            placeholder="Filter by Shift (A/B/C)"
+            value={filterShift}
+            onChange={(e) => setFilterShift(e.target.value)}
+          />
+        </div>
+
+        {filteredLogs.length === 0 ? (
+          <p className="text-sm text-muted">No matching logs found.</p>
+        ) : (
+          <ul className="space-y-2">
+            {filteredLogs.map((log, idx) => (
+              <li key={idx} className="border rounded p-2">
+                <p><strong>Date:</strong> {log.date}</p>
+                <p><strong>Equipment:</strong> {log.equipment}</p>
+                <p><strong>Shift:</strong> {log.shift}</p>
+                <p><strong>Technician:</strong> {log.technician}</p>
+                <p><strong>Checklist:</strong> {`
+                  ${log.lubrication ? "Lubrication, " : ""}
+                  ${log.inspection ? "Visual Inspection, " : ""}
+                  ${log.temperature ? "Temperature Check" : ""}`}</p>
+                <p><strong>Remarks:</strong> {log.remarks}</p>
+                <p><strong>Photo:</strong> {log.photo}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  )}
+</div>
+
+); }
 
-# Routing
-
-[MODES: framework]
-
-## Configuring Routes
-
-Routes are configured in `app/routes.ts`. Each route has two required parts: a URL pattern to match the URL, and a file path to the route module that defines its behavior.
-
-```ts filename=app/routes.ts
-import {
-  type RouteConfig,
-  route,
-} from "@react-router/dev/routes";
-
-export default [
-  route("some/path", "./some/file.tsx"),
-  // pattern ^           ^ module file
-] satisfies RouteConfig;
-```
-
-Here is a larger sample route config:
-
-```ts filename=app/routes.ts
-import {
-  type RouteConfig,
-  route,
-  index,
-  layout,
-  prefix,
-} from "@react-router/dev/routes";
-
-export default [
-  index("./home.tsx"),
-  route("about", "./about.tsx"),
-
-  layout("./auth/layout.tsx", [
-    route("login", "./auth/login.tsx"),
-    route("register", "./auth/register.tsx"),
-  ]),
-
-  ...prefix("concerts", [
-    index("./concerts/home.tsx"),
-    route(":city", "./concerts/city.tsx"),
-    route("trending", "./concerts/trending.tsx"),
-  ]),
-] satisfies RouteConfig;
-```
-
-If you prefer to define your routes via file naming conventions rather than configuration, the `@react-router/fs-routes` package provides a [file system routing convention][file-route-conventions]. You can even combine different routing conventions if you like:
-
-```ts filename=app/routes.ts
-import {
-  type RouteConfig,
-  route,
-} from "@react-router/dev/routes";
-import { flatRoutes } from "@react-router/fs-routes";
-
-export default [
-  route("/", "./home.tsx"),
-
-  ...(await flatRoutes()),
-] satisfies RouteConfig;
-```
-
-## Route Modules
-
-The files referenced in `routes.ts` define each route's behavior:
-
-```tsx filename=app/routes.ts
-route("teams/:teamId", "./team.tsx"),
-//           route module ^^^^^^^^
-```
-
-Here's a sample route module:
-
-```tsx filename=app/team.tsx
-// provides type safety/inference
-import type { Route } from "./+types/team";
-
-// provides `loaderData` to the component
-export async function loader({ params }: Route.LoaderArgs) {
-  let team = await fetchTeam(params.teamId);
-  return { name: team.name };
-}
-
-// renders after the loader is done
-export default function Component({
-  loaderData,
-}: Route.ComponentProps) {
-  return <h1>{loaderData.name}</h1>;
-}
-```
-
-Route modules have more features like actions, headers, and error boundaries, but they will be covered in the next guide: [Route Modules](./route-module)
-
-## Nested Routes
-
-Routes can be nested inside parent routes.
-
-```ts filename=app/routes.ts
-import {
-  type RouteConfig,
-  route,
-  index,
-} from "@react-router/dev/routes";
-
-export default [
-  // parent route
-  route("dashboard", "./dashboard.tsx", [
-    // child routes
-    index("./home.tsx"),
-    route("settings", "./settings.tsx"),
-  ]),
-] satisfies RouteConfig;
-```
-
-The path of the parent is automatically included in the child, so this config creates both `"/dashboard"` and `"/dashboard/settings"` URLs.
-
-Child routes are rendered through the `<Outlet/>` in the parent route.
-
-```tsx filename=app/dashboard.tsx
-import { Outlet } from "react-router";
-
-export default function Dashboard() {
-  return (
-    <div>
-      <h1>Dashboard</h1>
-      {/* will either be home.tsx or settings.tsx */}
-      <Outlet />
-    </div>
-  );
-}
-```
-
-## Root Route
-
-Every route in `routes.ts` is nested inside the special `app/root.tsx` module.
-
-## Layout Routes
-
-Using `layout`, layout routes create new nesting for their children, but they don't add any segments to the URL. It's like the root route but they can be added at any level.
-
-```tsx filename=app/routes.ts lines=[10,16]
-import {
-  type RouteConfig,
-  route,
-  layout,
-  index,
-  prefix,
-} from "@react-router/dev/routes";
-
-export default [
-  layout("./marketing/layout.tsx", [
-    index("./marketing/home.tsx"),
-    route("contact", "./marketing/contact.tsx"),
-  ]),
-  ...prefix("projects", [
-    index("./projects/home.tsx"),
-    layout("./projects/project-layout.tsx", [
-      route(":pid", "./projects/project.tsx"),
-      route(":pid/edit", "./projects/edit-project.tsx"),
-    ]),
-  ]),
-] satisfies RouteConfig;
-```
-
-Note that:
-
-- `home.tsx` and `contact.tsx` will be rendered into the `marketing/layout.tsx` outlet without creating any new URL paths
-- `project.tsx` and `edit-project.tsx` will be rendered into the `projects/project-layout.tsx` outlet at `/projects/:pid` and `/projects/:pid/edit` while `projects/home.tsx` will not.
-
-## Index Routes
-
-```ts
-index(componentFile),
-```
-
-Index routes render into their parent's [Outlet][outlet] at their parent's URL (like a default child route).
-
-```ts filename=app/routes.ts
-import {
-  type RouteConfig,
-  route,
-  index,
-} from "@react-router/dev/routes";
-
-export default [
-  // renders into the root.tsx Outlet at /
-  index("./home.tsx"),
-  route("dashboard", "./dashboard.tsx", [
-    // renders into the dashboard.tsx Outlet at /dashboard
-    index("./dashboard-home.tsx"),
-    route("settings", "./dashboard-settings.tsx"),
-  ]),
-] satisfies RouteConfig;
-```
-
-Note that index routes can't have children.
-
-## Route Prefixes
-
-Using `prefix`, you can add a path prefix to a set of routes without needing to introduce a parent route file.
-
-```tsx filename=app/routes.ts lines=[14]
-import {
-  type RouteConfig,
-  route,
-  layout,
-  index,
-  prefix,
-} from "@react-router/dev/routes";
-
-export default [
-  layout("./marketing/layout.tsx", [
-    index("./marketing/home.tsx"),
-    route("contact", "./marketing/contact.tsx"),
-  ]),
-  ...prefix("projects", [
-    index("./projects/home.tsx"),
-    layout("./projects/project-layout.tsx", [
-      route(":pid", "./projects/project.tsx"),
-      route(":pid/edit", "./projects/edit-project.tsx"),
-    ]),
-  ]),
-] satisfies RouteConfig;
-```
-
-## Dynamic Segments
-
-If a path segment starts with `:` then it becomes a "dynamic segment". When the route matches the URL, the dynamic segment will be parsed from the URL and provided as `params` to other router APIs.
-
-```ts filename=app/routes.ts
-route("teams/:teamId", "./team.tsx"),
-```
-
-```tsx filename=app/team.tsx
-import type { Route } from "./+types/team";
-
-export async function loader({ params }: Route.LoaderArgs) {
-  //                           ^? { teamId: string }
-}
-
-export default function Component({
-  params,
-}: Route.ComponentProps) {
-  params.teamId;
-  //        ^ string
-}
-```
-
-You can have multiple dynamic segments in one route path:
-
-```ts filename=app/routes.ts
-route("c/:categoryId/p/:productId", "./product.tsx"),
-```
-
-```tsx filename=app/product.tsx
-import type { Route } from "./+types/product";
-
-async function loader({ params }: LoaderArgs) {
-  //                    ^? { categoryId: string; productId: string }
-}
-```
-
-## Optional Segments
-
-You can make a route segment optional by adding a `?` to the end of the segment.
-
-```ts filename=app/routes.ts
-route(":lang?/categories", "./categories.tsx"),
-```
-
-You can have optional static segments, too:
-
-```ts filename=app/routes.ts
-route("users/:userId/edit?", "./user.tsx");
-```
-
-## Splats
-
-Also known as "catchall" and "star" segments. If a route path pattern ends with `/*` then it will match any characters following the `/`, including other `/` characters.
-
-```ts filename=app/routes.ts
-route("files/*", "./files.tsx"),
-```
-
-```tsx filename=app/files.tsx
-export async function loader({ params }: Route.LoaderArgs) {
-  // params["*"] will contain the remaining URL after files/
-}
-```
-
-You can destructure the `*`, you just have to assign it a new name. A common name is `splat`:
-
-```tsx
-const { "*": splat } = params;
-```
-
-## Component Routes
-
-You can also use components that match the URL to elements anywhere in the component tree:
-
-```tsx
-import { Routes, Route } from "react-router";
-
-function Wizard() {
-  return (
-    <div>
-      <h1>Some Wizard with Steps</h1>
-      <Routes>
-        <Route index element={<StepOne />} />
-        <Route path="step-2" element={<StepTwo />} />
-        <Route path="step-3" element={<StepThree />} />
-      </Routes>
-    </div>
-  );
-}
-```
-
-Note that these routes do not participate in data loading, actions, code splitting, or any other route module features, so their use cases are more limited than those of the route module.
-
----
-
-Next: [Route Module](./route-module)
-
-[file-route-conventions]: ../../how-to/file-route-conventions
-[outlet]: https://api.reactrouter.com/v7/functions/react_router.Outlet.html
